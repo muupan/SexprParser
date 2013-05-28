@@ -41,6 +41,20 @@ std::string TreeElement::ToString() const {
   }
 }
 
+std::string TreeElement::ToSexpr() const {
+  if (is_leaf_) {
+    return value_;
+  } else {
+    std::ostringstream o;
+    o << '(';
+    for (const auto& child : children_) {
+      o << ' ' << child.ToSexpr();
+    }
+    o << " )";
+    return o.str();
+  }
+}
+
 // Argument iterator must point to the token next to "("
 // When this function returns, iterator will point to corresponding ")"
 TreeElement ParseTillRightParen(Tokenizer::iterator& i) {
@@ -59,7 +73,7 @@ TreeElement ParseTillRightParen(Tokenizer::iterator& i) {
 }
 
 std::vector<TreeElement> Parse(const std::string& sexpr) {
-  Separator sep(" ", "()");
+  Separator sep(" \n\t", "()");
   Tokenizer tokens(sexpr, sep);
   std::vector<TreeElement> results;
   for (auto i = tokens.begin(); i != tokens.end(); ++i) {

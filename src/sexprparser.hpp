@@ -18,6 +18,7 @@ public:
   std::string GetValue() const;
   std::vector<TreeElement> GetChildren() const;
   std::string ToString() const;
+  std::string ToSexpr() const;
 };
 
 std::vector<TreeElement> Parse(const std::string& sexpr);
