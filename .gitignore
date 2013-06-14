@@ -1,4 +1,13 @@
+# Eclipse CDT things
 .cproject
 .project
+.settings
 /Debug
 /Release
+# Common C/C++ things
+*.o
+*.out
+# Project specific things
+main
+test/test
+path*.txt

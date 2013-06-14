@@ -1,29 +1,29 @@
+#include "sexpr_parser.hpp"
 #include <sstream>
 #include <boost/tokenizer.hpp>
-#include "sexprparser.hpp"
 
-namespace sexprparser {
+namespace sexpr_parser {
 
 typedef boost::char_separator<char> Separator;
 typedef boost::tokenizer<Separator> Tokenizer;
 
 TreeElement::TreeElement(const std::string& value) :
-    is_leaf_(true), value_(value), children_(std::vector<TreeElement>()) {
+    is_leaf_(true), value_(value), children_() {
 }
 
 TreeElement::TreeElement(const std::vector<TreeElement>& children) :
-    is_leaf_(false), value_(std::string()), children_(children) {
+    is_leaf_(false), value_(), children_(children) {
 }
 
-bool TreeElement::IsLeaf() const {
+const bool& TreeElement::IsLeaf() const {
   return is_leaf_;
 }
 
-std::string TreeElement::GetValue() const {
+const std::string& TreeElement::GetValue() const {
   return value_;
 }
 
-std::vector<TreeElement> TreeElement::GetChildren() const {
+const std::vector<TreeElement>& TreeElement::GetChildren() const {
   return children_;
 }
 
