@@ -1,4 +1,5 @@
 #include "sexpr_parser.hpp"
+#include <algorithm>
 #include <sstream>
 #include <boost/tokenizer.hpp>
 
@@ -52,6 +53,22 @@ std::string TreeElement::ToSexpr() const {
     }
     o << " )";
     return o.str();
+  }
+}
+
+bool TreeElement::operator==(const TreeElement& another) const {
+  if (is_leaf_) {
+    if (another.IsLeaf()) {
+      return value_ == another.GetValue();
+    } else {
+      return false;
+    }
+  } else {
+    if (!another.IsLeaf()) {
+      return children_ == another.GetChildren();
+    } else {
+      return false;
+    }
   }
 }
 

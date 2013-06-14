@@ -15,6 +15,7 @@ public:
   const std::vector<TreeElement>& GetChildren() const;
   std::string ToString() const;
   std::string ToSexpr() const;
+  bool operator==(const TreeElement& another) const;
 private:
   const bool is_leaf_;
   const std::string value_;
