@@ -5,6 +5,10 @@
 
 namespace sp = sexpr_parser;
 
+TEST(RemoveComments, Test) {
+  ASSERT_TRUE(sp::RemoveComments("; comment\n a ; comment") == "\n a ");
+}
+
 TEST(Parse, Empty) {
   ASSERT_TRUE(sp::Parse("").empty());
   ASSERT_TRUE(sp::Parse(" \n\t").empty());

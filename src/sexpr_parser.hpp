@@ -6,23 +6,24 @@
 
 namespace sexpr_parser {
 
-class TreeElement {
+class TreeNode {
 public:
-  TreeElement(const std::string& value);
-  TreeElement(const std::vector<TreeElement>& children);
-  const bool& IsLeaf() const;
-  const std::string& GetValue() const;
-  const std::vector<TreeElement>& GetChildren() const;
+  TreeNode(const std::string& value);
+  TreeNode(const std::vector<TreeNode>& children);
+  bool IsLeaf() const;
+  std::string GetValue() const;
+  std::vector<TreeNode> GetChildren() const;
   std::string ToString() const;
   std::string ToSexpr() const;
-  bool operator==(const TreeElement& another) const;
+  bool operator==(const TreeNode& another) const;
 private:
   const bool is_leaf_;
   const std::string value_;
-  const std::vector<TreeElement> children_;
+  const std::vector<TreeNode> children_;
 };
 
-std::vector<TreeElement> Parse(const std::string& sexpr);
+std::string RemoveComments(const std::string& sexpr);
+std::vector<TreeNode> Parse(const std::string& sexpr);
 
 }
 

@@ -1,6 +1,10 @@
 #include "sexpr_parser.hpp"
+
 #include <algorithm>
+#include <iostream>
 #include <sstream>
+
+#include <boost/regex.hpp>
 #include <boost/tokenizer.hpp>
 
 namespace sexpr_parser {
@@ -8,27 +12,27 @@ namespace sexpr_parser {
 typedef boost::char_separator<char> Separator;
 typedef boost::tokenizer<Separator> Tokenizer;
 
-TreeElement::TreeElement(const std::string& value) :
+TreeNode::TreeNode(const std::string& value) :
     is_leaf_(true), value_(value), children_() {
 }
 
-TreeElement::TreeElement(const std::vector<TreeElement>& children) :
+TreeNode::TreeNode(const std::vector<TreeNode>& children) :
     is_leaf_(false), value_(), children_(children) {
 }
 
-const bool& TreeElement::IsLeaf() const {
+bool TreeNode::IsLeaf() const {
   return is_leaf_;
 }
 
-const std::string& TreeElement::GetValue() const {
+std::string TreeNode::GetValue() const {
   return value_;
 }
 
-const std::vector<TreeElement>& TreeElement::GetChildren() const {
+std::vector<TreeNode> TreeNode::GetChildren() const {
   return children_;
 }
 
-std::string TreeElement::ToString() const {
+std::string TreeNode::ToString() const {
   if (is_leaf_) {
     return "leaf:" + value_;
   } else {
@@ -42,7 +46,7 @@ std::string TreeElement::ToString() const {
   }
 }
 
-std::string TreeElement::ToSexpr() const {
+std::string TreeNode::ToSexpr() const {
   if (is_leaf_) {
     return value_;
   } else {
@@ -56,7 +60,7 @@ std::string TreeElement::ToSexpr() const {
   }
 }
 
-bool TreeElement::operator==(const TreeElement& another) const {
+bool TreeNode::operator==(const TreeNode& another) const {
   if (is_leaf_) {
     if (another.IsLeaf()) {
       return value_ == another.GetValue();
@@ -72,34 +76,40 @@ bool TreeElement::operator==(const TreeElement& another) const {
   }
 }
 
+std::string RemoveComments(const std::string& sexpr) {
+  boost::regex comment(";.*?$");
+  return boost::regex_replace(sexpr, comment, std::string());
+}
+
 // Argument iterator must point to the token next to "("
 // When this function returns, iterator will point to corresponding ")"
-TreeElement ParseTillRightParen(Tokenizer::iterator& i) {
-  std::vector<TreeElement> children;
+TreeNode ParseTillRightParen(Tokenizer::iterator& i) {
+  std::vector<TreeNode> children;
   for (; *i != ")"; ++i) {
     if (*i == "(") {
       // Skip left paren and parse inside parens
       ++i;
       children.push_back(ParseTillRightParen(i));
     } else {
-      children.push_back(TreeElement(*i));
+      children.push_back(TreeNode(*i));
     }
   }
   // When this function returns, the iterator is always pointing to ")"
-  return TreeElement(children);
+  return TreeNode(children);
 }
 
-std::vector<TreeElement> Parse(const std::string& sexpr) {
+std::vector<TreeNode> Parse(const std::string& sexpr) {
   Separator sep(" \n\t", "()");
-  Tokenizer tokens(sexpr, sep);
-  std::vector<TreeElement> results;
+  const auto sexpr_no_comments = RemoveComments(sexpr);
+  Tokenizer tokens(sexpr_no_comments, sep);
+  std::vector<TreeNode> results;
   for (auto i = tokens.begin(); i != tokens.end(); ++i) {
     if (*i == "(") {
       // Skip left paren and parse inside parens
       ++i;
       results.push_back(ParseTillRightParen(i));
     } else {
-      results.push_back(TreeElement(*i));
+      results.push_back(TreeNode(*i));
     }
   }
   return results;

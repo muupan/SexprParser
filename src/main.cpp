@@ -5,7 +5,7 @@
 namespace sp = sexpr_parser;
 
 int main() {
-  const auto& sample = std::string("a (b) (c   d)\n\t(e (f (g h) i) j)");
+  const auto& sample = std::string("a (b) (c   d)\n\t(e (f (g () h) i) j)");
   std::cout << "Input S-expressions:" << std::endl;
   std::cout << sample << std::endl;
   const auto& parsed = sp::Parse(sample);
