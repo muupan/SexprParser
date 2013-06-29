@@ -1,7 +1,7 @@
 # Common macros
 CXX := g++
 CXXFLAGS := -Wall -std=c++0x -I./src
-LIBS := -lboost_regex -pthread
+LIBS := -lboost_regex-mt -pthread
 
 # Macros for build
 CXXFLAGS_RELEASE := -O3 -march=native -flto -DNDEBUG
