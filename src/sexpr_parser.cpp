@@ -177,7 +177,7 @@ TreeNode ParseTillRightParen(Tokenizer::iterator& i) {
 }
 
 std::vector<TreeNode> Parse(const std::string& sexpr) {
-  Separator sep(" \n\t", "()");
+  Separator sep(" \n\t\r", "()");
   const auto sexpr_no_comments = RemoveComments(sexpr);
   Tokenizer tokens(sexpr_no_comments, sep);
   std::vector<TreeNode> results;
