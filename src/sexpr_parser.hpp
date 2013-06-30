@@ -2,6 +2,7 @@
 #define SEXPR_PARSER_HPP_
 
 #include <string>
+#include <unordered_set>
 #include <vector>
 
 namespace sexpr_parser {
@@ -15,6 +16,9 @@ public:
   std::vector<TreeNode> GetChildren() const;
   std::string ToString() const;
   std::string ToSexpr() const;
+  std::string ToPrologClause() const;
+  std::string ToPrologTerm() const;
+  std::unordered_set<std::string> CollectAtoms() const;
   bool operator==(const TreeNode& another) const;
 private:
   const bool is_leaf_;
@@ -24,6 +28,8 @@ private:
 
 std::string RemoveComments(const std::string& sexpr);
 std::vector<TreeNode> Parse(const std::string& sexpr);
+std::string ToProlog(const std::vector<TreeNode>& nodes);
+std::unordered_set<std::string> CollectAtoms(const std::vector<TreeNode>& nodes);
 
 }
 

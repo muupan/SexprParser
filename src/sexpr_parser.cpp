@@ -1,6 +1,7 @@
 #include "sexpr_parser.hpp"
 
 #include <algorithm>
+#include <cassert>
 #include <iostream>
 #include <sstream>
 
@@ -60,6 +61,83 @@ std::string TreeNode::ToSexpr() const {
   }
 }
 
+std::string TreeNode::ToPrologTerm() const {
+  if (is_leaf_) {
+    // Atom term
+    auto atom = value_;
+    if (atom[0] == '?') {
+      atom[0] = '_';
+    }
+    return atom;
+  } else {
+    // Compound term
+    assert(children_.size() >= 2  && "Compound term must have a functor and one or more arguments.");
+    assert(children_.front().IsLeaf() && "Compound term must start with functor.");
+    std::ostringstream o;
+    // Functor
+    o << children_.front().GetValue();
+    o << '(';
+    // Arguments
+    for (auto i = children_.begin() + 1; i != children_.end(); ++i) {
+      if (i != children_.begin() + 1) {
+        o << ", ";
+      }
+      o << i->ToPrologTerm();
+    }
+    o << ')';
+    return o.str();
+  }
+}
+
+std::string TreeNode::ToPrologClause() const {
+  if (is_leaf_) {
+    // Fact clause of atom term
+    return ToPrologTerm() + '.';
+  } else {
+    assert(!children_.empty() && "Empty clause is not allowed.");
+    assert(children_.front().IsLeaf() && "Compound term must start with functor.");
+    if (children_.front().GetValue() == "<=") {
+      // Rule clause
+      assert(children_.size() >= 3 && "Rule clause must have head and body.");
+      std::ostringstream o;
+      // Head
+      o << children_.at(1).ToPrologTerm();
+      o << " :- ";
+      // Body
+      for (auto i = children_.begin() + 2; i != children_.end(); ++i) {
+        if (i != children_.begin() + 2) {
+          o << ", ";
+        }
+        o << i->ToPrologTerm();
+      }
+      o << '.';
+      return o.str();
+    } else {
+      // Fact clause of compound term
+      return ToPrologTerm() + '.';
+    }
+  }
+}
+
+std::unordered_set<std::string> TreeNode::CollectAtoms() const {
+  if (is_leaf_) {
+    if (value_ == "<=" || value_.front() == '?') {
+      // Not atom
+      return std::unordered_set<std::string>();
+    } else {
+      // atom
+      return std::unordered_set<std::string>({value_});
+    }
+  } else {
+    std::unordered_set<std::string> values;
+    for (const auto& child : children_) {
+      const auto& child_atoms = child.CollectAtoms();
+      values.insert(child_atoms.begin(), child_atoms.end());
+    }
+    return values;
+  }
+}
+
 bool TreeNode::operator==(const TreeNode& another) const {
   if (is_leaf_) {
     if (another.IsLeaf()) {
@@ -115,6 +193,21 @@ std::vector<TreeNode> Parse(const std::string& sexpr) {
   return results;
 }
 
+std::string ToProlog(const std::vector<TreeNode>& nodes) {
+  std::ostringstream o;
+  for (const auto& node : nodes) {
+    o << node.ToPrologClause() << std::endl;
+  }
+  return o.str();
 }
 
+std::unordered_set<std::string> CollectAtoms(const std::vector<TreeNode>& nodes) {
+  std::unordered_set<std::string> values;
+  for (const auto& node : nodes) {
+    const auto& node_values = node.CollectAtoms();
+    values.insert(node_values.begin(), node_values.end());
+  }
+  return values;
+}
 
+}
