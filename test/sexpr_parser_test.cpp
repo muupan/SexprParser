@@ -39,31 +39,46 @@ TEST(Parse, Reparse) {
 }
 
 TEST(Parse, ToPrologClause) {
-  const auto& trees = sp::Parse("(role player) fact (fact2 1) (<= rule1 fact) (<= (rule2 ?x) fact (fact2 ?x))");
+  const auto& trees = sp::Parse("(role player) fact1 (fact2 1) (<= rule1 fact1) (<= (rule2 ?x) fact1 (fact2 ?x))");
   ASSERT_TRUE(trees.size() == 5);
   ASSERT_TRUE(trees[0].ToPrologClause() == "role(player).");
-  ASSERT_TRUE(trees[1].ToPrologClause() == "fact.");
+  ASSERT_TRUE(trees[1].ToPrologClause() == "fact1.");
   ASSERT_TRUE(trees[2].ToPrologClause() == "fact2(1).");
-  ASSERT_TRUE(trees[3].ToPrologClause() == "rule1 :- fact.");
-  ASSERT_TRUE(trees[4].ToPrologClause() == "rule2(_x) :- fact, fact2(_x).");
+  ASSERT_TRUE(trees[3].ToPrologClause() == "rule1 :- fact1.");
+  ASSERT_TRUE(trees[4].ToPrologClause() == "rule2(_x) :- fact1, fact2(_x).");
 }
 
 TEST(Parse, ToProlog) {
-  const auto& trees = sp::Parse("(role player) fact (fact2 1) (<= rule1 fact) (<= (rule2 ?x) fact (fact2 ?x))");
-  const std::string answer = "role(player).\n""fact.\n""fact2(1).\n""rule1 :- fact.\n""rule2(_x) :- fact, fact2(_x).\n";
+  const auto& trees = sp::Parse("(role player) fact1 (fact2 1) (<= rule1 fact1) (<= (rule2 ?x) fact1 (fact2 ?x))");
+  const std::string answer = "role(player).\n""fact1.\n""fact2(1).\n""rule1 :- fact1.\n""rule2(_x) :- fact1, fact2(_x).\n";
   ASSERT_TRUE(sp::ToProlog(trees) == answer);
 }
 
-TEST(CollectAtoms, Test) {
-  const auto& trees = sp::Parse("(role player) fact (fact2 1) (<= rule1 fact) (<= (rule2 ?x) fact (fact2 ?x))");
-  const auto& atoms = sp::CollectAtoms(trees);
-  ASSERT_TRUE(atoms.size() == 7); // role, player, fact, fact2, 1, rule1, rule2
-  ASSERT_TRUE(atoms.count("role"));
+TEST(CollectNonFunctorAtoms, Test) {
+  const auto& trees = sp::Parse("(role player) fact1 (fact2 1) (<= rule1 fact1) (<= (rule2 ?x) fact1 (fact2 ?x))");
+  const auto& atoms = sp::CollectNonFunctorAtoms(trees);
+  ASSERT_TRUE(atoms.size() == 4); // player, fact, 1, rule1
+  ASSERT_TRUE(!atoms.count("role"));
   ASSERT_TRUE(atoms.count("player"));
-  ASSERT_TRUE(atoms.count("fact"));
-  ASSERT_TRUE(atoms.count("fact2"));
+  ASSERT_TRUE(atoms.count("fact1"));
+  ASSERT_TRUE(!atoms.count("fact2"));
   ASSERT_TRUE(atoms.count("1"));
   ASSERT_TRUE(atoms.count("rule1"));
+  ASSERT_TRUE(!atoms.count("rule2"));
+  ASSERT_TRUE(!atoms.count("?x"));
+  ASSERT_TRUE(!atoms.count("<="));
+}
+
+TEST(CollectFunctorAtoms, Test) {
+  const auto& trees = sp::Parse("(role player) fact1 (fact2 1) (<= rule1 fact1) (<= (rule2 ?x) fact1 (fact2 ?x))");
+  const auto& atoms = sp::CollectFunctorAtoms(trees);
+  ASSERT_TRUE(atoms.size() == 3); // role, fact2, rule2
+  ASSERT_TRUE(atoms.count("role"));
+  ASSERT_TRUE(!atoms.count("player"));
+  ASSERT_TRUE(!atoms.count("fact1"));
+  ASSERT_TRUE(atoms.count("fact2"));
+  ASSERT_TRUE(!atoms.count("1"));
+  ASSERT_TRUE(!atoms.count("rule1"));
   ASSERT_TRUE(atoms.count("rule2"));
   ASSERT_TRUE(!atoms.count("?x"));
   ASSERT_TRUE(!atoms.count("<="));

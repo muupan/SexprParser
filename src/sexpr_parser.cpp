@@ -119,20 +119,50 @@ std::string TreeNode::ToPrologClause() const {
   }
 }
 
-std::unordered_set<std::string> TreeNode::CollectAtoms() const {
+std::unordered_set<std::string> TreeNode::CollectNonFunctorAtoms() const {
   if (is_leaf_) {
     if (value_ == "<=" || value_.front() == '?') {
       // Not atom
       return std::unordered_set<std::string>();
     } else {
-      // atom
+      // Non-functor atom
       return std::unordered_set<std::string>({value_});
     }
   } else {
+    // Compound term
+    assert(children_.size() >= 2  && "Compound term must have a functor and one or more arguments.");
+    assert(children_.front().IsLeaf() && "Compound term must start with functor.");
     std::unordered_set<std::string> values;
-    for (const auto& child : children_) {
-      const auto& child_atoms = child.CollectAtoms();
-      values.insert(child_atoms.begin(), child_atoms.end());
+    // Ignore functor and search non-functor arguments
+    for (auto i = children_.begin() + 1; i != children_.end(); ++i) {
+      if (i->IsLeaf()) {
+        const auto& child_atoms = i->CollectNonFunctorAtoms();
+        values.insert(child_atoms.begin(), child_atoms.end());
+      }
+    }
+    return values;
+  }
+}
+
+std::unordered_set<std::string> TreeNode::CollectFunctorAtoms() const {
+  if (is_leaf_) {
+    // Not compound term
+    return std::unordered_set<std::string>();
+  } else {
+    // Compound term
+    assert(children_.size() >= 2  && "Compound term must have a functor and one or more arguments.");
+    assert(children_.front().IsLeaf() && "Compound term must start with functor.");
+    std::unordered_set<std::string> values;
+    // Functor
+    if (children_.front().GetValue() != "<=") {
+      values.insert(children_.front().GetValue());
+    }
+    // Search compound term arguments
+    for (auto i = children_.begin() + 1; i != children_.end(); ++i) {
+      if (!i->IsLeaf()) {
+        const auto& child_atoms = i->CollectFunctorAtoms();
+        values.insert(child_atoms.begin(), child_atoms.end());
+      }
     }
     return values;
   }
@@ -201,10 +231,19 @@ std::string ToProlog(const std::vector<TreeNode>& nodes) {
   return o.str();
 }
 
-std::unordered_set<std::string> CollectAtoms(const std::vector<TreeNode>& nodes) {
+std::unordered_set<std::string> CollectNonFunctorAtoms(const std::vector<TreeNode>& nodes) {
   std::unordered_set<std::string> values;
   for (const auto& node : nodes) {
-    const auto& node_values = node.CollectAtoms();
+    const auto& node_values = node.CollectNonFunctorAtoms();
+    values.insert(node_values.begin(), node_values.end());
+  }
+  return values;
+}
+
+std::unordered_set<std::string> CollectFunctorAtoms(const std::vector<TreeNode>& nodes) {
+  std::unordered_set<std::string> values;
+  for (const auto& node : nodes) {
+    const auto& node_values = node.CollectFunctorAtoms();
     values.insert(node_values.begin(), node_values.end());
   }
   return values;
