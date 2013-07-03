@@ -74,12 +74,15 @@ TEST(CollectFunctorAtoms, Test) {
   const auto& atoms = sp::CollectFunctorAtoms(trees);
   ASSERT_TRUE(atoms.size() == 3); // role, fact2, rule2
   ASSERT_TRUE(atoms.count("role"));
+  ASSERT_TRUE(atoms.at("role") == 1);
   ASSERT_TRUE(!atoms.count("player"));
   ASSERT_TRUE(!atoms.count("fact1"));
   ASSERT_TRUE(atoms.count("fact2"));
+  ASSERT_TRUE(atoms.at("fact2") == 1);
   ASSERT_TRUE(!atoms.count("1"));
   ASSERT_TRUE(!atoms.count("rule1"));
   ASSERT_TRUE(atoms.count("rule2"));
+  ASSERT_TRUE(atoms.at("rule2") == 1);
   ASSERT_TRUE(!atoms.count("?x"));
   ASSERT_TRUE(!atoms.count("<="));
 }

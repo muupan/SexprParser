@@ -144,18 +144,18 @@ std::unordered_set<std::string> TreeNode::CollectNonFunctorAtoms() const {
   }
 }
 
-std::unordered_set<std::string> TreeNode::CollectFunctorAtoms() const {
+std::unordered_map<std::string, int> TreeNode::CollectFunctorAtoms() const {
   if (is_leaf_) {
     // Not compound term
-    return std::unordered_set<std::string>();
+    return std::unordered_map<std::string, int>();
   } else {
     // Compound term
     assert(children_.size() >= 2  && "Compound term must have a functor and one or more arguments.");
     assert(children_.front().IsLeaf() && "Compound term must start with functor.");
-    std::unordered_set<std::string> values;
+    std::unordered_map<std::string, int> values;
     // Functor
     if (children_.front().GetValue() != "<=") {
-      values.insert(children_.front().GetValue());
+      values.emplace(children_.front().GetValue(), children_.size() - 1);
     }
     // Search compound term arguments
     for (auto i = children_.begin() + 1; i != children_.end(); ++i) {
@@ -240,8 +240,8 @@ std::unordered_set<std::string> CollectNonFunctorAtoms(const std::vector<TreeNod
   return values;
 }
 
-std::unordered_set<std::string> CollectFunctorAtoms(const std::vector<TreeNode>& nodes) {
-  std::unordered_set<std::string> values;
+std::unordered_map<std::string, int> CollectFunctorAtoms(const std::vector<TreeNode>& nodes) {
+  std::unordered_map<std::string, int> values;
   for (const auto& node : nodes) {
     const auto& node_values = node.CollectFunctorAtoms();
     values.insert(node_values.begin(), node_values.end());

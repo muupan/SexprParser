@@ -3,6 +3,7 @@
 
 #include <string>
 #include <unordered_set>
+#include <unordered_map>
 #include <vector>
 
 namespace sexpr_parser {
@@ -19,7 +20,7 @@ public:
   std::string ToPrologClause() const;
   std::string ToPrologTerm() const;
   std::unordered_set<std::string> CollectNonFunctorAtoms() const;
-  std::unordered_set<std::string> CollectFunctorAtoms() const;
+  std::unordered_map<std::string, int> CollectFunctorAtoms() const;
   bool operator==(const TreeNode& another) const;
 private:
   const bool is_leaf_;
@@ -31,7 +32,7 @@ std::string RemoveComments(const std::string& sexpr);
 std::vector<TreeNode> Parse(const std::string& sexpr);
 std::string ToProlog(const std::vector<TreeNode>& nodes);
 std::unordered_set<std::string> CollectNonFunctorAtoms(const std::vector<TreeNode>& nodes);
-std::unordered_set<std::string> CollectFunctorAtoms(const std::vector<TreeNode>& nodes);
+std::unordered_map<std::string, int> CollectFunctorAtoms(const std::vector<TreeNode>& nodes);
 
 }
 
