@@ -54,10 +54,25 @@ TEST(Parse, ToProlog) {
   ASSERT_TRUE(sp::ToProlog(trees) == answer);
 }
 
+TEST(CollectAtoms, Test) {
+  const auto& trees = sp::Parse("(role player) fact1 (fact2 1) (<= rule1 fact1) (<= (rule2 ?x) fact1 (fact2 ?x))");
+  const auto& atoms = sp::CollectAtoms(trees);
+  ASSERT_TRUE(atoms.size() == 7); // role, player, fact1, fact2, 1, rule1, rule2
+  ASSERT_TRUE(atoms.count("role"));
+  ASSERT_TRUE(atoms.count("player"));
+  ASSERT_TRUE(atoms.count("fact1"));
+  ASSERT_TRUE(atoms.count("fact2"));
+  ASSERT_TRUE(atoms.count("1"));
+  ASSERT_TRUE(atoms.count("rule1"));
+  ASSERT_TRUE(atoms.count("rule2"));
+  ASSERT_TRUE(!atoms.count("?x"));
+  ASSERT_TRUE(!atoms.count("<="));
+}
+
 TEST(CollectNonFunctorAtoms, Test) {
   const auto& trees = sp::Parse("(role player) fact1 (fact2 1) (<= rule1 fact1) (<= (rule2 ?x) fact1 (fact2 ?x))");
   const auto& atoms = sp::CollectNonFunctorAtoms(trees);
-  ASSERT_TRUE(atoms.size() == 4); // player, fact, 1, rule1
+  ASSERT_TRUE(atoms.size() == 4); // player, fact1, 1, rule1
   ASSERT_TRUE(!atoms.count("role"));
   ASSERT_TRUE(atoms.count("player"));
   ASSERT_TRUE(atoms.count("fact1"));

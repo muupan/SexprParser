@@ -19,6 +19,7 @@ public:
   std::string ToSexpr() const;
   std::string ToPrologClause() const;
   std::string ToPrologTerm() const;
+  std::unordered_set<std::string> CollectAtoms() const;
   std::unordered_set<std::string> CollectNonFunctorAtoms() const;
   std::unordered_map<std::string, int> CollectFunctorAtoms() const;
   bool operator==(const TreeNode& another) const;
@@ -31,6 +32,7 @@ private:
 std::string RemoveComments(const std::string& sexpr);
 std::vector<TreeNode> Parse(const std::string& sexpr);
 std::string ToProlog(const std::vector<TreeNode>& nodes);
+std::unordered_set<std::string> CollectAtoms(const std::vector<TreeNode>& nodes);
 std::unordered_set<std::string> CollectNonFunctorAtoms(const std::vector<TreeNode>& nodes);
 std::unordered_map<std::string, int> CollectFunctorAtoms(const std::vector<TreeNode>& nodes);
 
