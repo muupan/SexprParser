@@ -61,12 +61,14 @@ std::string TreeNode::ToSexpr() const {
   }
 }
 
-std::string TreeNode::ToPrologTerm() const {
+std::string TreeNode::ToPrologTerm(const bool quotes_atoms) const {
   if (is_leaf_) {
     // Atom term
     auto atom = value_;
     if (atom[0] == '?') {
       atom[0] = '_';
+    } else if (quotes_atoms) {
+      atom = '\'' + atom + '\'';
     }
     return atom;
   } else {
@@ -75,24 +77,24 @@ std::string TreeNode::ToPrologTerm() const {
     assert(children_.front().IsLeaf() && "Compound term must start with functor.");
     std::ostringstream o;
     // Functor
-    o << children_.front().GetValue();
+    o << children_.front().ToPrologTerm(quotes_atoms);
     o << '(';
     // Arguments
     for (auto i = children_.begin() + 1; i != children_.end(); ++i) {
       if (i != children_.begin() + 1) {
         o << ", ";
       }
-      o << i->ToPrologTerm();
+      o << i->ToPrologTerm(quotes_atoms);
     }
     o << ')';
     return o.str();
   }
 }
 
-std::string TreeNode::ToPrologClause() const {
+std::string TreeNode::ToPrologClause(const bool quotes_atoms) const {
   if (is_leaf_) {
     // Fact clause of atom term
-    return ToPrologTerm() + '.';
+    return ToPrologTerm(quotes_atoms) + '.';
   } else {
     assert(!children_.empty() && "Empty clause is not allowed.");
     assert(children_.front().IsLeaf() && "Compound term must start with functor.");
@@ -101,20 +103,20 @@ std::string TreeNode::ToPrologClause() const {
       assert(children_.size() >= 3 && "Rule clause must have head and body.");
       std::ostringstream o;
       // Head
-      o << children_.at(1).ToPrologTerm();
+      o << children_.at(1).ToPrologTerm(quotes_atoms);
       o << " :- ";
       // Body
       for (auto i = children_.begin() + 2; i != children_.end(); ++i) {
         if (i != children_.begin() + 2) {
           o << ", ";
         }
-        o << i->ToPrologTerm();
+        o << i->ToPrologTerm(quotes_atoms);
       }
       o << '.';
       return o.str();
     } else {
       // Fact clause of compound term
-      return ToPrologTerm() + '.';
+      return ToPrologTerm(quotes_atoms) + '.';
     }
   }
 }
@@ -190,6 +192,22 @@ std::unordered_map<std::string, int> TreeNode::CollectFunctorAtoms() const {
   }
 }
 
+TreeNode TreeNode::ReplaceAtoms(const std::string& before, const std::string& after) const {
+  if (is_leaf_) {
+    if (value_ == before) {
+      return TreeNode(after);
+    } else {
+      return TreeNode(value_);
+    }
+  } else {
+    std::vector<TreeNode> new_children;
+    for (const auto& child : children_) {
+      new_children.push_back(child.ReplaceAtoms(before, after));
+    }
+    return TreeNode(new_children);
+  }
+}
+
 bool TreeNode::operator==(const TreeNode& another) const {
   if (is_leaf_) {
     if (another.IsLeaf()) {
@@ -245,10 +263,10 @@ std::vector<TreeNode> Parse(const std::string& sexpr) {
   return results;
 }
 
-std::string ToProlog(const std::vector<TreeNode>& nodes) {
+std::string ToProlog(const std::vector<TreeNode>& nodes, const bool quotes_atoms) {
   std::ostringstream o;
   for (const auto& node : nodes) {
-    o << node.ToPrologClause() << std::endl;
+    o << node.ToPrologClause(quotes_atoms) << std::endl;
   }
   return o.str();
 }
@@ -278,6 +296,14 @@ std::unordered_map<std::string, int> CollectFunctorAtoms(const std::vector<TreeN
     values.insert(node_values.begin(), node_values.end());
   }
   return values;
+}
+
+std::vector<TreeNode> ReplaceAtoms(const std::vector<TreeNode>& nodes, const std::string& before, const std::string& after) {
+  std::vector<TreeNode> new_nodes;
+  for (const auto& node : nodes) {
+    new_nodes.push_back(node.ReplaceAtoms(before, after));
+  }
+  return new_nodes;
 }
 
 }

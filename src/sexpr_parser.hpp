@@ -17,11 +17,12 @@ public:
   std::vector<TreeNode> GetChildren() const;
   std::string ToString() const;
   std::string ToSexpr() const;
-  std::string ToPrologClause() const;
-  std::string ToPrologTerm() const;
+  std::string ToPrologClause(const bool quotes_atoms) const;
+  std::string ToPrologTerm(const bool quotes_atoms) const;
   std::unordered_set<std::string> CollectAtoms() const;
   std::unordered_set<std::string> CollectNonFunctorAtoms() const;
   std::unordered_map<std::string, int> CollectFunctorAtoms() const;
+  TreeNode ReplaceAtoms(const std::string& before, const std::string& after) const;
   bool operator==(const TreeNode& another) const;
 private:
   const bool is_leaf_;
@@ -31,10 +32,11 @@ private:
 
 std::string RemoveComments(const std::string& sexpr);
 std::vector<TreeNode> Parse(const std::string& sexpr);
-std::string ToProlog(const std::vector<TreeNode>& nodes);
+std::string ToProlog(const std::vector<TreeNode>& nodes, const bool quotes_atoms);
 std::unordered_set<std::string> CollectAtoms(const std::vector<TreeNode>& nodes);
 std::unordered_set<std::string> CollectNonFunctorAtoms(const std::vector<TreeNode>& nodes);
 std::unordered_map<std::string, int> CollectFunctorAtoms(const std::vector<TreeNode>& nodes);
+std::vector<TreeNode> ReplaceAtoms(const std::vector<TreeNode>& nodes, const std::string& before, const std::string& after);
 
 }
 

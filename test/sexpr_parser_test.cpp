@@ -41,17 +41,19 @@ TEST(Parse, Reparse) {
 TEST(Parse, ToPrologClause) {
   const auto& trees = sp::Parse("(role player) fact1 (fact2 1) (<= rule1 fact1) (<= (rule2 ?x) fact1 (fact2 ?x))");
   ASSERT_TRUE(trees.size() == 5);
-  ASSERT_TRUE(trees[0].ToPrologClause() == "role(player).");
-  ASSERT_TRUE(trees[1].ToPrologClause() == "fact1.");
-  ASSERT_TRUE(trees[2].ToPrologClause() == "fact2(1).");
-  ASSERT_TRUE(trees[3].ToPrologClause() == "rule1 :- fact1.");
-  ASSERT_TRUE(trees[4].ToPrologClause() == "rule2(_x) :- fact1, fact2(_x).");
+  ASSERT_TRUE(trees[0].ToPrologClause(false) == "role(player).");
+  ASSERT_TRUE(trees[1].ToPrologClause(false) == "fact1.");
+  ASSERT_TRUE(trees[2].ToPrologClause(false) == "fact2(1).");
+  ASSERT_TRUE(trees[3].ToPrologClause(false) == "rule1 :- fact1.");
+  ASSERT_TRUE(trees[4].ToPrologClause(false) == "rule2(_x) :- fact1, fact2(_x).");
 }
 
 TEST(Parse, ToProlog) {
   const auto& trees = sp::Parse("(role player) fact1 (fact2 1) (<= rule1 fact1) (<= (rule2 ?x) fact1 (fact2 ?x))");
   const std::string answer = "role(player).\n""fact1.\n""fact2(1).\n""rule1 :- fact1.\n""rule2(_x) :- fact1, fact2(_x).\n";
-  ASSERT_TRUE(sp::ToProlog(trees) == answer);
+  const std::string answer_quoted = "'role'('player').\n""'fact1'.\n""'fact2'('1').\n""'rule1' :- 'fact1'.\n""'rule2'(_x) :- 'fact1', 'fact2'(_x).\n";
+  ASSERT_TRUE(sp::ToProlog(trees, false) == answer);
+  ASSERT_TRUE(sp::ToProlog(trees, true) == answer_quoted);
 }
 
 TEST(CollectAtoms, Test) {
@@ -100,4 +102,15 @@ TEST(CollectFunctorAtoms, Test) {
   ASSERT_TRUE(atoms.at("rule2") == 1);
   ASSERT_TRUE(!atoms.count("?x"));
   ASSERT_TRUE(!atoms.count("<="));
+}
+
+TEST(ReplaceAtoms, Test) {
+  const auto& trees = sp::Parse("(role player) fact1 (fact2 1) (<= rule1 fact1) (<= (rule2 ?x) fact1 (fact2 ?x))");
+  const auto& trees_replaced = sp::ReplaceAtoms(trees, "fact1", "fact3");
+  ASSERT_TRUE(trees_replaced.size() == 5);
+  ASSERT_TRUE(trees_replaced[0].ToPrologClause(false) == "role(player).");
+  ASSERT_TRUE(trees_replaced[1].ToPrologClause(false) == "fact3.");
+  ASSERT_TRUE(trees_replaced[2].ToPrologClause(false) == "fact2(1).");
+  ASSERT_TRUE(trees_replaced[3].ToPrologClause(false) == "rule1 :- fact3.");
+  ASSERT_TRUE(trees_replaced[4].ToPrologClause(false) == "rule2(_x) :- fact3, fact2(_x).");
 }
