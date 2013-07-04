@@ -159,10 +159,8 @@ std::unordered_set<std::string> TreeNode::CollectNonFunctorAtoms() const {
     std::unordered_set<std::string> values;
     // Ignore functor and search non-functor arguments
     for (auto i = children_.begin() + 1; i != children_.end(); ++i) {
-      if (i->IsLeaf()) {
-        const auto& child_atoms = i->CollectNonFunctorAtoms();
-        values.insert(child_atoms.begin(), child_atoms.end());
-      }
+      const auto& child_atoms = i->CollectNonFunctorAtoms();
+      values.insert(child_atoms.begin(), child_atoms.end());
     }
     return values;
   }
