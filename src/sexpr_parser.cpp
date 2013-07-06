@@ -13,8 +13,39 @@ namespace sexpr_parser {
 typedef boost::char_separator<char> Separator;
 typedef boost::tokenizer<Separator> Tokenizer;
 
+const std::unordered_set<std::string> reserved_words = {
+  "role",
+  "init",
+  "true",
+  "does",
+  "legal",
+  "next",
+  "goal",
+  "terminal",
+  "input",
+  "base"
+  "or",
+  "not",
+  "distinct"
+};
+
+std::string ToLower(const std::string& str) {
+  auto lowered = str;
+  std::transform(lowered.begin(), lowered.end(), lowered.begin(), ::tolower);
+  return lowered;
+}
+
+std::string LowerReservedWords(const std::string& word) {
+  const auto lowered = ToLower(word);
+  if (reserved_words.count(lowered)) {
+    return lowered;
+  } else {
+    return word;
+  }
+}
+
 TreeNode::TreeNode(const std::string& value) :
-    is_leaf_(true), value_(value), children_() {
+    is_leaf_(true), value_(LowerReservedWords(value)), children_() {
 }
 
 TreeNode::TreeNode(const std::vector<TreeNode>& children) :
