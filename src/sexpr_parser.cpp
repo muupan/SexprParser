@@ -23,20 +23,20 @@ const std::unordered_set<std::string> reserved_words = {
   "goal",
   "terminal",
   "input",
-  "base"
+  "base",
   "or",
   "not",
   "distinct"
 };
 
-std::string ToLower(const std::string& str) {
+std::string ToLowerCase(const std::string& str) {
   auto lowered = str;
   std::transform(lowered.begin(), lowered.end(), lowered.begin(), ::tolower);
   return lowered;
 }
 
 std::string LowerReservedWords(const std::string& word) {
-  const auto lowered = ToLower(word);
+  const auto lowered = ToLowerCase(word);
   if (reserved_words.count(lowered)) {
     return lowered;
   } else {
@@ -90,7 +90,7 @@ std::string TreeNode::ToSexpr() const {
       }
       o << i->ToSexpr();
     }
-    o << " )";
+    o << ')';
     return o.str();
   }
 }

@@ -30,6 +30,15 @@ TEST(Parse, EmptyParen) {
   ASSERT_TRUE(trees[0].GetChildren().empty());
 }
 
+TEST(Parse, LowerReservedWords) {
+  const auto str = std::string("(ROLE INIT TRUE DOES LEGAL NEXT TERMINAL GOAL BASE INPUT OR NOT DISTINCT NOT_RESERVED)");
+  const auto answer = std::string("(role init true does legal next terminal goal base input or not distinct NOT_RESERVED)");
+  const auto nodes = sp::Parse(str);
+  ASSERT_TRUE(nodes.size() == 1);
+  std::cout << nodes.front().ToSexpr() << std::endl;
+  ASSERT_TRUE(nodes.front().ToSexpr() == answer);
+}
+
 TEST(Parse, Reparse) {
   const auto& trees = sp::Parse("(a (b (c) d) e)");
   ASSERT_TRUE(trees.size() == 1);
