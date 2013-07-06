@@ -38,6 +38,16 @@ TEST(Parse, Reparse) {
   ASSERT_TRUE(std::equal(trees.begin(), trees.end(), another_trees.begin()));
 }
 
+TEST(Parse, FlattenTupleWithOneChild) {
+  const auto kif = std::string("(((a)) (b (c) d) e)");
+  const auto kif_flattened = std::string("(a (b c d) e)");
+  const auto trees = sp::Parse(kif, true);
+  const auto trees_flattened = sp::Parse(kif_flattened, true);
+  ASSERT_TRUE(trees.size() == 1);
+  ASSERT_TRUE(trees_flattened.size() == 1);
+  ASSERT_TRUE(std::equal(trees.begin(), trees.end(), trees_flattened.begin()));
+}
+
 TEST(Parse, ToPrologClause) {
   const auto& trees = sp::Parse("(role player) fact1 (fact2 1) (<= rule1 fact1) (<= (rule2 ?x) fact1 (fact2 ?x))");
   ASSERT_TRUE(trees.size() == 5);

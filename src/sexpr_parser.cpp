@@ -53,8 +53,11 @@ std::string TreeNode::ToSexpr() const {
   } else {
     std::ostringstream o;
     o << '(';
-    for (const auto& child : children_) {
-      o << ' ' << child.ToSexpr();
+    for (auto i = children_.begin(); i != children_.end(); ++i) {
+      if (i != children_.begin()) {
+        o << ' ';
+      }
+      o << i->ToSexpr();
     }
     o << " )";
     return o.str();
@@ -229,22 +232,25 @@ std::string RemoveComments(const std::string& sexpr) {
 
 // Argument iterator must point to the token next to "("
 // When this function returns, iterator will point to corresponding ")"
-TreeNode ParseTillRightParen(Tokenizer::iterator& i) {
+TreeNode ParseTillRightParen(Tokenizer::iterator& i, const bool flatten_tuple_with_one_child) {
   std::vector<TreeNode> children;
   for (; *i != ")"; ++i) {
     if (*i == "(") {
       // Skip left paren and parse inside parens
       ++i;
-      children.push_back(ParseTillRightParen(i));
+      children.push_back(ParseTillRightParen(i, flatten_tuple_with_one_child));
     } else {
       children.push_back(TreeNode(*i));
     }
+  }
+  if (flatten_tuple_with_one_child && children.size() == 1) {
+    return TreeNode(children.front());
   }
   // When this function returns, the iterator is always pointing to ")"
   return TreeNode(children);
 }
 
-std::vector<TreeNode> Parse(const std::string& sexpr) {
+std::vector<TreeNode> Parse(const std::string& sexpr, bool flatten_tuple_with_one_child) {
   Separator sep(" \n\t\r", "()");
   const auto sexpr_no_comments = RemoveComments(sexpr);
   Tokenizer tokens(sexpr_no_comments, sep);
@@ -253,12 +259,16 @@ std::vector<TreeNode> Parse(const std::string& sexpr) {
     if (*i == "(") {
       // Skip left paren and parse inside parens
       ++i;
-      results.push_back(ParseTillRightParen(i));
+      results.push_back(ParseTillRightParen(i, flatten_tuple_with_one_child));
     } else {
       results.push_back(TreeNode(*i));
     }
   }
   return results;
+}
+
+std::vector<TreeNode> ParseKIF(const std::string& kif) {
+  return Parse(kif, true);
 }
 
 std::string ToProlog(const std::vector<TreeNode>& nodes, const bool quotes_atoms) {
