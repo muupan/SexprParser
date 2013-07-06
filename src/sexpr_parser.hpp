@@ -17,6 +17,7 @@ public:
   std::vector<TreeNode> GetChildren() const;
   std::string ToString() const;
   std::string ToSexpr() const;
+  std::string ChildrenToSexpr() const;
   std::string ToPrologAtom(const bool quotes_atoms, const std::string& atom_prefix) const;
   std::string ToPrologFunctor(const bool quotes_atoms, const std::string& functor_prefix) const;
   std::string ToPrologClause(const bool quotes_atoms, const std::string& functor_prefix, const std::string& atom_prefix) const;

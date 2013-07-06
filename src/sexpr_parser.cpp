@@ -64,6 +64,17 @@ std::string TreeNode::ToSexpr() const {
   }
 }
 
+std::string TreeNode::ChildrenToSexpr() const {
+  std::ostringstream o;
+  for (auto i = children_.begin(); i != children_.end(); ++i) {
+    if (i != children_.begin()) {
+      o << ' ';
+    }
+    o << i->ToSexpr();
+  }
+  return o.str();
+}
+
 std::string TreeNode::ToPrologAtom(const bool quotes_atoms, const std::string& atom_prefix) const {
   assert(is_leaf_);
   auto atom = value_;
