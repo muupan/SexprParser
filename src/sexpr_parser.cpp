@@ -64,43 +64,58 @@ std::string TreeNode::ToSexpr() const {
   }
 }
 
-std::string TreeNode::ToPrologTerm(const bool quotes_atoms, const std::string& prefix) const {
-  if (is_leaf_) {
-    // Atom term
-    auto atom = value_;
-    if (atom[0] == '?') {
-      atom[0] = '_';
-    } else {
-      atom = prefix + atom;
-      if (quotes_atoms) {
-        atom = '\'' + atom + '\'';
-      }
+std::string TreeNode::ToPrologAtom(const bool quotes_atoms, const std::string& atom_prefix) const {
+  assert(is_leaf_);
+  auto atom = value_;
+  if (atom[0] == '?') {
+    atom[0] = '_';
+  } else {
+    atom = atom_prefix + atom;
+    if (quotes_atoms) {
+      atom = '\'' + atom + '\'';
     }
-    return atom;
+  }
+  return atom;
+}
+
+std::string TreeNode::ToPrologFunctor(const bool quotes_atoms, const std::string& functor_prefix) const {
+  assert(is_leaf_);
+  assert(value_[0] != '?');
+  auto functor = functor_prefix + value_;
+  if (quotes_atoms) {
+    functor = '\'' + functor + '\'';
+  }
+  return functor;
+}
+
+std::string TreeNode::ToPrologTerm(const bool quotes_atoms, const std::string& functor_prefix, const std::string& atom_prefix) const {
+  if (is_leaf_) {
+    // Non-functor atom term
+    return ToPrologAtom(quotes_atoms, atom_prefix);
   } else {
     // Compound term
     assert(children_.size() >= 2  && "Compound term must have a functor and one or more arguments.");
     assert(children_.front().IsLeaf() && "Compound term must start with functor.");
     std::ostringstream o;
     // Functor
-    o << children_.front().ToPrologTerm(quotes_atoms, prefix);
+    o << children_.front().ToPrologFunctor(quotes_atoms, functor_prefix);
     o << '(';
     // Arguments
     for (auto i = children_.begin() + 1; i != children_.end(); ++i) {
       if (i != children_.begin() + 1) {
         o << ", ";
       }
-      o << i->ToPrologTerm(quotes_atoms, prefix);
+      o << i->ToPrologTerm(quotes_atoms, functor_prefix, atom_prefix);
     }
     o << ')';
     return o.str();
   }
 }
 
-std::string TreeNode::ToPrologClause(const bool quotes_atoms, const std::string& prefix) const {
+std::string TreeNode::ToPrologClause(const bool quotes_atoms, const std::string& functor_prefix, const std::string& atom_prefix) const {
   if (is_leaf_) {
     // Fact clause of atom term
-    return ToPrologTerm(quotes_atoms, prefix) + '.';
+    return ToPrologTerm(quotes_atoms, functor_prefix, atom_prefix) + '.';
   } else {
     assert(!children_.empty() && "Empty clause is not allowed.");
     assert(children_.front().IsLeaf() && "Compound term must start with functor.");
@@ -109,20 +124,20 @@ std::string TreeNode::ToPrologClause(const bool quotes_atoms, const std::string&
       assert(children_.size() >= 3 && "Rule clause must have head and body.");
       std::ostringstream o;
       // Head
-      o << children_.at(1).ToPrologTerm(quotes_atoms, prefix);
+      o << children_.at(1).ToPrologTerm(quotes_atoms, functor_prefix, atom_prefix);
       o << " :- ";
       // Body
       for (auto i = children_.begin() + 2; i != children_.end(); ++i) {
         if (i != children_.begin() + 2) {
           o << ", ";
         }
-        o << i->ToPrologTerm(quotes_atoms, prefix);
+        o << i->ToPrologTerm(quotes_atoms, functor_prefix, atom_prefix);
       }
       o << '.';
       return o.str();
     } else {
       // Fact clause of compound term
-      return ToPrologTerm(quotes_atoms, prefix) + '.';
+      return ToPrologTerm(quotes_atoms, functor_prefix, atom_prefix) + '.';
     }
   }
 }
@@ -274,10 +289,10 @@ std::vector<TreeNode> ParseKIF(const std::string& kif) {
   return Parse(kif, true);
 }
 
-std::string ToProlog(const std::vector<TreeNode>& nodes, const bool quotes_atoms, const std::string& prefix) {
+std::string ToProlog(const std::vector<TreeNode>& nodes, const bool quotes_atoms, const std::string& functor_prefix, const std::string& atom_prefix) {
   std::ostringstream o;
   for (const auto& node : nodes) {
-    o << node.ToPrologClause(quotes_atoms, prefix) << std::endl;
+    o << node.ToPrologClause(quotes_atoms, functor_prefix, atom_prefix) << std::endl;
   }
   return o.str();
 }
