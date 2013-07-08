@@ -162,18 +162,20 @@ std::string TreeNode::ToPrologClause(const bool quotes_atoms, const std::string&
     assert(!children_.empty() && "Empty clause is not allowed.");
     assert(children_.front().IsLeaf() && "Compound term must start with functor.");
     if (children_.front().GetValue() == "<=") {
+      assert(children_.size() >= 2 && "Rule clause must have head.");
       // Rule clause
-      assert(children_.size() >= 3 && "Rule clause must have head and body.");
       std::ostringstream o;
       // Head
       o << children_.at(1).ToPrologTerm(quotes_atoms, functor_prefix, atom_prefix);
-      o << " :- ";
-      // Body
-      for (auto i = children_.begin() + 2; i != children_.end(); ++i) {
-        if (i != children_.begin() + 2) {
-          o << ", ";
+      if (children_.size() >= 3) {
+        // Body
+        o << " :- ";
+        for (auto i = children_.begin() + 2; i != children_.end(); ++i) {
+          if (i != children_.begin() + 2) {
+            o << ", ";
+          }
+          o << i->ToPrologTerm(quotes_atoms, functor_prefix, atom_prefix);
         }
-        o << i->ToPrologTerm(quotes_atoms, functor_prefix, atom_prefix);
       }
       o << '.';
       return o.str();
