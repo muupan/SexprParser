@@ -356,6 +356,9 @@ std::string ToProlog(const std::vector<TreeNode>& nodes, const bool quotes_atoms
   if (adds_helper_clauses) {
     const auto functors = CollectFunctorAtoms(nodes);
     for (const auto& functor_arity_pair : functors) {
+      if (reserved_words.count(functor_arity_pair.first)) {
+        continue;
+      }
       const auto functor_atom = quotes_atoms ? ('\'' + functor_prefix + functor_arity_pair.first + '\'') : (functor_prefix + functor_arity_pair.first);
       o << "user_defined_functor(" << functor_atom << ", " << functor_arity_pair.second << ")." << std::endl;
     }
