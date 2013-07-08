@@ -69,8 +69,18 @@ TEST(Parse, ToPrologClause) {
 
 TEST(Parse, ToProlog) {
   const auto& trees = sp::Parse("(role player) fact1 (fact2 1) (<= rule1 fact1) (<= (rule2 ?x) fact1 (fact2 ?x))");
-  const std::string answer = "role(player).\n""fact1.\n""fact2(1).\n""rule1 :- fact1.\n""rule2(_x) :- fact1, fact2(_x).\n";
-  const std::string answer_quoted = "'role'('player').\n""'fact1'.\n""'fact2'('1').\n""'rule1' :- 'fact1'.\n""'rule2'(_x) :- 'fact1', 'fact2'(_x).\n";
+  const std::string answer =
+      "role(player).\n"
+      "fact1.\n"
+      "fact2(1).\n"
+      "rule1 :- fact1.\n"
+      "rule2(_x) :- fact1, fact2(_x).\n";
+  const std::string answer_quoted =
+      "'role'('player').\n"
+      "'fact1'.\n"
+      "'fact2'('1').\n"
+      "'rule1' :- 'fact1'.\n"
+      "'rule2'(_x) :- 'fact1', 'fact2'(_x).\n";
   ASSERT_TRUE(sp::ToProlog(trees, false) == answer);
   ASSERT_TRUE(sp::ToProlog(trees, true) == answer_quoted);
 }

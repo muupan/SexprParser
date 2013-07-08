@@ -348,10 +348,17 @@ std::vector<TreeNode> ParseKIF(const std::string& kif) {
   return Parse(kif, true);
 }
 
-std::string ToProlog(const std::vector<TreeNode>& nodes, const bool quotes_atoms, const std::string& functor_prefix, const std::string& atom_prefix) {
+std::string ToProlog(const std::vector<TreeNode>& nodes, const bool quotes_atoms, const std::string& functor_prefix, const std::string& atom_prefix, const bool adds_helper_clauses) {
   std::ostringstream o;
   for (const auto& node : nodes) {
     o << node.ToPrologClause(quotes_atoms, functor_prefix, atom_prefix) << std::endl;
+  }
+  if (adds_helper_clauses) {
+    const auto functors = CollectFunctorAtoms(nodes);
+    for (const auto& functor_arity_pair : functors) {
+      const auto functor_atom = functor_prefix + (quotes_atoms ? '\'' + functor_arity_pair.first + '\'' : functor_arity_pair.first);
+      o << "user_defined_functor(" << functor_atom << ", " << functor_arity_pair.second << ")." << std::endl;
+    }
   }
   return o.str();
 }

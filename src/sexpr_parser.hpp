@@ -36,7 +36,7 @@ private:
 std::string RemoveComments(const std::string& sexpr);
 std::vector<TreeNode> Parse(const std::string& sexpr, const bool flatten_tuple_with_one_child = false);
 std::vector<TreeNode> ParseKIF(const std::string& kif);
-std::string ToProlog(const std::vector<TreeNode>& nodes, const bool quotes_atoms, const std::string& functor_prefix = "", const std::string& atom_prefix = "");
+std::string ToProlog(const std::vector<TreeNode>& nodes, const bool quotes_atoms, const std::string& functor_prefix = "", const std::string& atom_prefix = "", const bool adds_helper_clauses = false);
 std::unordered_set<std::string> CollectAtoms(const std::vector<TreeNode>& nodes);
 std::unordered_set<std::string> CollectNonFunctorAtoms(const std::vector<TreeNode>& nodes);
 std::unordered_map<std::string, int> CollectFunctorAtoms(const std::vector<TreeNode>& nodes);
