@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cassert>
 #include <iostream>
+#include <locale>
 #include <sstream>
 
 #include <boost/regex.hpp>
@@ -106,11 +107,25 @@ std::string TreeNode::ChildrenToSexpr() const {
   return o.str();
 }
 
+std::string FilterVariableName(const std::string& base_name) {
+  std::ostringstream o;
+  for (auto i = base_name.begin(); i != base_name.end(); ++i) {
+    if (std::isalnum(*i) || *i == '_') {
+      o << *i;
+    } else {
+      // Symbols to char code
+      o << "_c" << static_cast<int>(*i) << '_';
+    }
+  }
+  return o.str();
+}
+
 std::string TreeNode::ToPrologAtom(const bool quotes_atoms, const std::string& atom_prefix) const {
   assert(is_leaf_);
   auto atom = value_;
   if (atom[0] == '?') {
-    atom[0] = '_';
+    // Variable
+    atom = '_' + FilterVariableName(atom.substr(1));
   } else {
     atom = atom_prefix + atom;
     if (quotes_atoms) {

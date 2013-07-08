@@ -75,6 +75,12 @@ TEST(Parse, ToProlog) {
   ASSERT_TRUE(sp::ToProlog(trees, true) == answer_quoted);
 }
 
+TEST(Parse, FilterVariableCode) {
+  const auto& trees = sp::Parse("(<= head (body ?v+v))");
+  const std::string answer = "head :- body(_v_c43_v).\n";
+  ASSERT_TRUE(sp::ToProlog(trees, false) == answer);
+}
+
 TEST(CollectAtoms, Test) {
   const auto& trees = sp::Parse("(role player) fact1 (fact2 1) (<= rule1 fact1) (<= (rule2 ?x) fact1 (fact2 ?x))");
   const auto& atoms = sp::CollectAtoms(trees);
