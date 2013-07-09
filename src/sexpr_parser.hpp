@@ -13,8 +13,8 @@ public:
   TreeNode(const std::string& value);
   TreeNode(const std::vector<TreeNode>& children);
   bool IsLeaf() const;
-  std::string GetValue() const;
-  std::vector<TreeNode> GetChildren() const;
+  const std::string& GetValue() const;
+  const std::vector<TreeNode>& GetChildren() const;
   std::string ToString() const;
   std::string ToSexpr() const;
   std::string ChildrenToSexpr() const;

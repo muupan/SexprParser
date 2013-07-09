@@ -17,17 +17,19 @@ TEST(Parse, Empty) {
 }
 
 TEST(Parse, SingleLiteral) {
-  const auto& trees = sp::Parse("a");
-  ASSERT_TRUE(trees.size() == 1);
-  ASSERT_TRUE(trees[0].IsLeaf());
-  ASSERT_TRUE(trees[0].GetValue() == "a");
+  const auto nodes = sp::Parse("a");
+  ASSERT_TRUE(nodes.size() == 1);
+  const auto node = nodes.front();
+  ASSERT_TRUE(node.IsLeaf());
+  ASSERT_TRUE(node.GetValue() == "a");
 }
 
 TEST(Parse, EmptyParen) {
-  const auto& trees = sp::Parse("()");
-  ASSERT_TRUE(trees.size() == 1);
-  ASSERT_TRUE(!trees[0].IsLeaf());
-  ASSERT_TRUE(trees[0].GetChildren().empty());
+  const auto nodes = sp::Parse("()");
+  ASSERT_TRUE(nodes.size() == 1);
+  const auto node = nodes.front();
+  ASSERT_TRUE(!node.IsLeaf());
+  ASSERT_TRUE(node.GetChildren().empty());
 }
 
 TEST(Parse, LowerReservedWords) {
@@ -35,40 +37,41 @@ TEST(Parse, LowerReservedWords) {
   const auto answer = std::string("(role init true does legal next terminal goal base input or not distinct NOT_RESERVED)");
   const auto nodes = sp::Parse(str);
   ASSERT_TRUE(nodes.size() == 1);
-  std::cout << nodes.front().ToSexpr() << std::endl;
-  ASSERT_TRUE(nodes.front().ToSexpr() == answer);
+  const auto node = nodes.front();
+  ASSERT_TRUE(node.ToSexpr() == answer);
 }
 
 TEST(Parse, Reparse) {
-  const auto& trees = sp::Parse("(a (b (c) d) e)");
-  ASSERT_TRUE(trees.size() == 1);
-  const auto& sexpr = trees[0].ToSexpr();
-  const auto& another_trees = sp::Parse(sexpr);
-  ASSERT_TRUE(std::equal(trees.begin(), trees.end(), another_trees.begin()));
+  const auto nodes = sp::Parse("(a (b (c) d) e)");
+  ASSERT_TRUE(nodes.size() == 1);
+  const auto node = nodes.front();
+  const auto sexpr = node.ToSexpr();
+  const auto another_nodes = sp::Parse(sexpr);
+  ASSERT_TRUE(std::equal(nodes.begin(), nodes.end(), another_nodes.begin()));
 }
 
 TEST(Parse, FlattenTupleWithOneChild) {
   const auto kif = std::string("(((a)) (b (c) d) e)");
   const auto kif_flattened = std::string("(a (b c d) e)");
-  const auto trees = sp::Parse(kif, true);
-  const auto trees_flattened = sp::Parse(kif_flattened, true);
-  ASSERT_TRUE(trees.size() == 1);
-  ASSERT_TRUE(trees_flattened.size() == 1);
-  ASSERT_TRUE(std::equal(trees.begin(), trees.end(), trees_flattened.begin()));
+  const auto nodes = sp::Parse(kif, true);
+  const auto nodes_flattened = sp::Parse(kif_flattened, true);
+  ASSERT_TRUE(nodes.size() == 1);
+  ASSERT_TRUE(nodes_flattened.size() == 1);
+  ASSERT_TRUE(std::equal(nodes.begin(), nodes.end(), nodes_flattened.begin()));
 }
 
 TEST(Parse, ToPrologClause) {
-  const auto& trees = sp::Parse("(role player) fact1 (fact2 1) (<= rule1 fact1) (<= (rule2 ?x) fact1 (fact2 ?x))");
-  ASSERT_TRUE(trees.size() == 5);
-  ASSERT_TRUE(trees[0].ToPrologClause(false, "", "") == "role(player).");
-  ASSERT_TRUE(trees[1].ToPrologClause(false, "", "") == "fact1.");
-  ASSERT_TRUE(trees[2].ToPrologClause(false, "", "") == "fact2(1).");
-  ASSERT_TRUE(trees[3].ToPrologClause(false, "", "") == "rule1 :- fact1.");
-  ASSERT_TRUE(trees[4].ToPrologClause(false, "", "") == "rule2(_x) :- fact1, fact2(_x).");
+  const auto nodes = sp::Parse("(role player) fact1 (fact2 1) (<= rule1 fact1) (<= (rule2 ?x) fact1 (fact2 ?x))");
+  ASSERT_TRUE(nodes.size() == 5);
+  ASSERT_TRUE(nodes[0].ToPrologClause(false, "", "") == "role(player).");
+  ASSERT_TRUE(nodes[1].ToPrologClause(false, "", "") == "fact1.");
+  ASSERT_TRUE(nodes[2].ToPrologClause(false, "", "") == "fact2(1).");
+  ASSERT_TRUE(nodes[3].ToPrologClause(false, "", "") == "rule1 :- fact1.");
+  ASSERT_TRUE(nodes[4].ToPrologClause(false, "", "") == "rule2(_x) :- fact1, fact2(_x).");
 }
 
 TEST(Parse, ToProlog) {
-  const auto& trees = sp::Parse("(role player) fact1 (fact2 1) (<= rule1 fact1) (<= (rule2 ?x) fact1 (fact2 ?x))");
+  const auto nodes = sp::Parse("(role player) fact1 (fact2 1) (<= rule1 fact1) (<= (rule2 ?x) fact1 (fact2 ?x))");
   const std::string answer =
       "role(player).\n"
       "fact1.\n"
@@ -81,19 +84,19 @@ TEST(Parse, ToProlog) {
       "'fact2'('1').\n"
       "'rule1' :- 'fact1'.\n"
       "'rule2'(_x) :- 'fact1', 'fact2'(_x).\n";
-  ASSERT_TRUE(sp::ToProlog(trees, false) == answer);
-  ASSERT_TRUE(sp::ToProlog(trees, true) == answer_quoted);
+  ASSERT_TRUE(sp::ToProlog(nodes, false) == answer);
+  ASSERT_TRUE(sp::ToProlog(nodes, true) == answer_quoted);
 }
 
 TEST(Parse, FilterVariableCode) {
-  const auto& trees = sp::Parse("(<= head (body ?v+v))");
+  const auto& nodes = sp::Parse("(<= head (body ?v+v))");
   const std::string answer = "head :- body(_v_c43_v).\n";
-  ASSERT_TRUE(sp::ToProlog(trees, false) == answer);
+  ASSERT_TRUE(sp::ToProlog(nodes, false) == answer);
 }
 
 TEST(CollectAtoms, Test) {
-  const auto& trees = sp::Parse("(role player) fact1 (fact2 1) (<= rule1 fact1) (<= (rule2 ?x) fact1 (fact2 ?x))");
-  const auto& atoms = sp::CollectAtoms(trees);
+  const auto nodes = sp::Parse("(role player) fact1 (fact2 1) (<= rule1 fact1) (<= (rule2 ?x) fact1 (fact2 ?x))");
+  const auto atoms = sp::CollectAtoms(nodes);
   ASSERT_TRUE(atoms.size() == 7); // role, player, fact1, fact2, 1, rule1, rule2
   ASSERT_TRUE(atoms.count("role"));
   ASSERT_TRUE(atoms.count("player"));
@@ -107,8 +110,8 @@ TEST(CollectAtoms, Test) {
 }
 
 TEST(CollectNonFunctorAtoms, Test) {
-  const auto& trees = sp::Parse("(role player) fact1 (fact2 1) (<= rule1 fact1) (<= (rule2 ?x) fact1 (fact2 ?x))");
-  const auto& atoms = sp::CollectNonFunctorAtoms(trees);
+  const auto nodes = sp::Parse("(role player) fact1 (fact2 1) (<= rule1 fact1) (<= (rule2 ?x) fact1 (fact2 ?x))");
+  const auto atoms = sp::CollectNonFunctorAtoms(nodes);
   ASSERT_TRUE(atoms.size() == 4); // player, fact1, 1, rule1
   ASSERT_TRUE(!atoms.count("role"));
   ASSERT_TRUE(atoms.count("player"));
@@ -122,8 +125,8 @@ TEST(CollectNonFunctorAtoms, Test) {
 }
 
 TEST(CollectFunctorAtoms, Test) {
-  const auto& trees = sp::Parse("(role player) fact1 (fact2 1) (<= rule1 fact1) (<= (rule2 ?x) fact1 (fact2 ?x))");
-  const auto& atoms = sp::CollectFunctorAtoms(trees);
+  const auto nodes = sp::Parse("(role player) fact1 (fact2 1) (<= rule1 fact1) (<= (rule2 ?x) fact1 (fact2 ?x))");
+  const auto atoms = sp::CollectFunctorAtoms(nodes);
   ASSERT_TRUE(atoms.size() == 3); // role, fact2, rule2
   ASSERT_TRUE(atoms.count("role"));
   ASSERT_TRUE(atoms.at("role") == 1);
@@ -140,12 +143,12 @@ TEST(CollectFunctorAtoms, Test) {
 }
 
 TEST(ReplaceAtoms, Test) {
-  const auto& trees = sp::Parse("(role player) fact1 (fact2 1) (<= rule1 fact1) (<= (rule2 ?x) fact1 (fact2 ?x))");
-  const auto& trees_replaced = sp::ReplaceAtoms(trees, "fact1", "fact3");
-  ASSERT_TRUE(trees_replaced.size() == 5);
-  ASSERT_TRUE(trees_replaced[0].ToPrologClause(false, "", "") == "role(player).");
-  ASSERT_TRUE(trees_replaced[1].ToPrologClause(false, "", "") == "fact3.");
-  ASSERT_TRUE(trees_replaced[2].ToPrologClause(false, "", "") == "fact2(1).");
-  ASSERT_TRUE(trees_replaced[3].ToPrologClause(false, "", "") == "rule1 :- fact3.");
-  ASSERT_TRUE(trees_replaced[4].ToPrologClause(false, "", "") == "rule2(_x) :- fact3, fact2(_x).");
+  const auto nodes = sp::Parse("(role player) fact1 (fact2 1) (<= rule1 fact1) (<= (rule2 ?x) fact1 (fact2 ?x))");
+  const auto nodes_replaced = sp::ReplaceAtoms(nodes, "fact1", "fact3");
+  ASSERT_TRUE(nodes_replaced.size() == 5);
+  ASSERT_TRUE(nodes_replaced[0].ToPrologClause(false, "", "") == "role(player).");
+  ASSERT_TRUE(nodes_replaced[1].ToPrologClause(false, "", "") == "fact3.");
+  ASSERT_TRUE(nodes_replaced[2].ToPrologClause(false, "", "") == "fact2(1).");
+  ASSERT_TRUE(nodes_replaced[3].ToPrologClause(false, "", "") == "rule1 :- fact3.");
+  ASSERT_TRUE(nodes_replaced[4].ToPrologClause(false, "", "") == "rule2(_x) :- fact3, fact2(_x).");
 }

@@ -57,11 +57,11 @@ bool TreeNode::IsLeaf() const {
   return is_leaf_;
 }
 
-std::string TreeNode::GetValue() const {
+const std::string& TreeNode::GetValue() const {
   return value_;
 }
 
-std::vector<TreeNode> TreeNode::GetChildren() const {
+const std::vector<TreeNode>& TreeNode::GetChildren() const {
   return children_;
 }
 
