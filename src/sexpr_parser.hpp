@@ -8,11 +8,15 @@
 
 namespace sexpr_parser {
 
+using ArgPos = std::pair<std::string, int>;
+using ArgPosPair = std::pair<ArgPos, ArgPos>;
+
 class TreeNode {
 public:
   TreeNode(const std::string& value);
   TreeNode(const std::vector<TreeNode>& children);
   bool IsLeaf() const;
+  bool IsVariable() const;
   const std::string& GetValue() const;
   const std::vector<TreeNode>& GetChildren() const;
   std::string ToString() const;
@@ -25,6 +29,8 @@ public:
   std::unordered_set<std::string> CollectAtoms() const;
   std::unordered_set<std::string> CollectNonFunctorAtoms() const;
   std::unordered_map<std::string, int> CollectFunctorAtoms() const;
+  std::unordered_map<std::string, std::unordered_set<ArgPos>> CollectVariableArgs() const;
+  std::unordered_set<ArgPosPair> CollectSameDomainArgs() const;
   TreeNode ReplaceAtoms(const std::string& before, const std::string& after) const;
   bool operator==(const TreeNode& another) const;
 private:

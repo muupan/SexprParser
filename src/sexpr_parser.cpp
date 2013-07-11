@@ -6,8 +6,19 @@
 #include <locale>
 #include <sstream>
 
+#include <boost/functional/hash.hpp>
 #include <boost/regex.hpp>
 #include <boost/tokenizer.hpp>
+
+namespace std
+{
+template <class T, class U>
+struct hash<pair<T, U>> {
+  size_t operator()(const pair<T, U>& a) const {
+    return boost::hash_value(a);
+  }
+};
+}
 
 namespace sexpr_parser {
 
@@ -55,6 +66,10 @@ TreeNode::TreeNode(const std::vector<TreeNode>& children) :
 
 bool TreeNode::IsLeaf() const {
   return is_leaf_;
+}
+
+bool TreeNode::IsVariable() const {
+  return is_leaf_ && !value_.empty() && value_.front() == '?';
 }
 
 const std::string& TreeNode::GetValue() const {
@@ -120,9 +135,8 @@ std::string FilterVariableName(const std::string& base_name) {
   return o.str();
 }
 
-std::string TreeNode::ToPrologAtom(const bool quotes_atoms, const std::string& atom_prefix) const {
-  assert(is_leaf_);
-  auto atom = value_;
+std::string ConvertToPrologAtom(const std::string& value, const bool quotes_atoms, const std::string& atom_prefix) {
+  auto atom = value;
   if (atom[0] == '?') {
     // Variable
     atom = '_' + FilterVariableName(atom.substr(1));
@@ -135,14 +149,23 @@ std::string TreeNode::ToPrologAtom(const bool quotes_atoms, const std::string& a
   return atom;
 }
 
-std::string TreeNode::ToPrologFunctor(const bool quotes_atoms, const std::string& functor_prefix) const {
+std::string TreeNode::ToPrologAtom(const bool quotes_atoms, const std::string& atom_prefix) const {
   assert(is_leaf_);
-  assert(value_[0] != '?');
-  auto functor = functor_prefix + value_;
+  return ConvertToPrologAtom(value_, quotes_atoms, atom_prefix);
+}
+
+std::string ConvertToPrologFunctor(const std::string& value, const bool quotes_atoms, const std::string& functor_prefix) {
+  auto functor = functor_prefix + value;
   if (quotes_atoms) {
     functor = '\'' + functor + '\'';
   }
   return functor;
+}
+
+std::string TreeNode::ToPrologFunctor(const bool quotes_atoms, const std::string& functor_prefix) const {
+  assert(is_leaf_);
+  assert(value_[0] != '?');
+  return ConvertToPrologFunctor(value_, quotes_atoms, functor_prefix);
 }
 
 std::string TreeNode::ToPrologTerm(const bool quotes_atoms, const std::string& functor_prefix, const std::string& atom_prefix) const {
@@ -270,6 +293,81 @@ std::unordered_map<std::string, int> TreeNode::CollectFunctorAtoms() const {
   }
 }
 
+std::unordered_map<std::string, std::unordered_set<ArgPos>> TreeNode::CollectVariableArgs() const {
+  assert(!is_leaf_);
+  // Compound term
+  assert(children_.size() >= 2  && "Compound term must have a functor and one or more arguments.");
+  assert(children_.front().IsLeaf() && "Compound term must start with functor.");
+  std::unordered_map<std::string, std::unordered_set<ArgPos>> values;
+  const auto functor = children_.front().GetValue();
+  // Ignore functor and search non-functor arguments
+  for (auto i = children_.begin() + 1; i != children_.end(); ++i) {
+    if (i->IsLeaf()) {
+      if (i->IsVariable()) {
+        const auto variable_name = i->GetValue();
+        const auto pos = std::distance(children_.begin(), i);
+        if (values.count(i->GetValue())) {
+          values.at(variable_name).emplace(functor, pos);
+        } else {
+          values.emplace(variable_name, std::unordered_set<ArgPos>({ ArgPos(functor, pos) }));
+        }
+      }
+    } else {
+      const auto tmp = i->CollectVariableArgs();
+      for (const auto t : tmp) {
+        if (values.count(t.first)) {
+          values.at(t.first).insert(t.second.begin(), t.second.end());
+        } else {
+          values.insert(t);
+        }
+      }
+    }
+  }
+  return values;
+}
+
+std::unordered_set<ArgPosPair> TreeNode::CollectSameDomainArgs() const {
+  assert(!is_leaf_);
+  assert(children_.size() >= 2  && "Compound term must have a functor and one or more arguments.");
+  assert(children_.front().IsLeaf() && "Compound term must start with functor.");
+  assert(children_.front().GetValue() == "<=");
+  std::unordered_map<std::string, std::unordered_set<ArgPos>> variable_args;
+  for (auto i = children_.begin() + 1; i != children_.end(); ++i) {
+    if (!i->IsLeaf()) {
+      const auto tmp = i->CollectVariableArgs();
+      for (const auto t : tmp) {
+        if (variable_args.count(t.first)) {
+          variable_args.at(t.first).insert(t.second.begin(), t.second.end());
+        } else {
+          variable_args.insert(t);
+        }
+      }
+    }
+  }
+  std::unordered_set<ArgPosPair> result;
+  for (const auto variable_and_positions : variable_args) {
+    const auto& positions = variable_and_positions.second;
+    assert(!positions.empty());
+    if  (positions.size() == 1) {
+      continue;
+    }
+    auto sorted_positions = std::vector<ArgPos>(positions.begin(), positions.end());
+    std::sort(sorted_positions.begin(), sorted_positions.end(), [](const ArgPos& p, const ArgPos& q){
+      if (p.first == q.first) {
+        return p.second < q.second;
+      } else {
+        return p.first < q.first;
+      }
+    });
+    for (auto i = sorted_positions.begin(); i != sorted_positions.end() - 1; ++i) {
+      for (auto j = i + 1; j != sorted_positions.end(); ++j) {
+        result.emplace(*i, *j);
+      }
+    }
+  }
+  return result;
+}
+
 TreeNode TreeNode::ReplaceAtoms(const std::string& before, const std::string& after) const {
   if (is_leaf_) {
     if (value_ == before) {
@@ -348,20 +446,51 @@ std::vector<TreeNode> ParseKIF(const std::string& kif) {
   return Parse(kif, true);
 }
 
-std::string ToProlog(const std::vector<TreeNode>& nodes, const bool quotes_atoms, const std::string& functor_prefix, const std::string& atom_prefix, const bool adds_helper_clauses) {
+std::string GeneratePrologHelperClauses(
+    const std::vector<TreeNode>& nodes,
+    const bool quotes_atoms,
+    const std::string& functor_prefix,
+    const std::string& atom_prefix) {
+  std::ostringstream o;
+  // User defined functors
+  const auto functors = CollectFunctorAtoms(nodes);
+  for (const auto& functor_arity_pair : functors) {
+    if (reserved_words.count(functor_arity_pair.first)) {
+      continue;
+    }
+    const auto functor_atom = ConvertToPrologFunctor(functor_arity_pair.first, quotes_atoms, functor_prefix);
+    o << "user_defined_functor(" << functor_atom << ", " << functor_arity_pair.second << ")." << std::endl;
+  }
+  // Same domain args
+  std::unordered_set<ArgPosPair> same_domain_args_pairs;
+  for (const auto& node : nodes) {
+    if (!node.IsLeaf() && node.GetChildren().front().GetValue() == "<=") {
+      const auto tmp = node.CollectSameDomainArgs();
+      same_domain_args_pairs.insert(tmp.begin(), tmp.end());
+    }
+  }
+  for (const auto& same_domain_args_pair : same_domain_args_pairs) {
+    const auto functor_atom1 = ConvertToPrologFunctor(same_domain_args_pair.first.first, quotes_atoms, functor_prefix);
+    const auto pos1 = same_domain_args_pair.first.second;
+    const auto functor_atom2 = ConvertToPrologFunctor(same_domain_args_pair.second.first, quotes_atoms, functor_prefix);
+    const auto pos2 = same_domain_args_pair.second.second;
+    o << "same_domain(" << functor_atom1 << ", " << pos1 << ", " << functor_atom2 << ", " << pos2 << ")." << std::endl;
+  }
+  return o.str();
+}
+
+std::string ToProlog(
+    const std::vector<TreeNode>& nodes,
+    const bool quotes_atoms,
+    const std::string& functor_prefix,
+    const std::string& atom_prefix,
+    const bool adds_helper_clauses) {
   std::ostringstream o;
   for (const auto& node : nodes) {
     o << node.ToPrologClause(quotes_atoms, functor_prefix, atom_prefix) << std::endl;
   }
   if (adds_helper_clauses) {
-    const auto functors = CollectFunctorAtoms(nodes);
-    for (const auto& functor_arity_pair : functors) {
-      if (reserved_words.count(functor_arity_pair.first)) {
-        continue;
-      }
-      const auto functor_atom = quotes_atoms ? ('\'' + functor_prefix + functor_arity_pair.first + '\'') : (functor_prefix + functor_arity_pair.first);
-      o << "user_defined_functor(" << functor_atom << ", " << functor_arity_pair.second << ")." << std::endl;
-    }
+    o << GeneratePrologHelperClauses(nodes, quotes_atoms, functor_prefix, atom_prefix) << std::endl;
   }
   return o.str();
 }
