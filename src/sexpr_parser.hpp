@@ -30,7 +30,8 @@ public:
   std::unordered_set<std::string> CollectNonFunctorAtoms() const;
   std::unordered_map<std::string, int> CollectFunctorAtoms() const;
   std::unordered_map<std::string, std::unordered_set<ArgPos>> CollectVariableArgs() const;
-  std::unordered_set<ArgPosPair> CollectSameDomainArgs() const;
+  std::unordered_set<ArgPosPair> CollectSameDomainArgsInBody() const;
+  std::unordered_set<ArgPosPair> CollectSameDomainArgsBetweenHeadAndBody() const;
   TreeNode ReplaceAtoms(const std::string& before, const std::string& after) const;
   bool operator==(const TreeNode& another) const;
 private:
